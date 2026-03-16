@@ -2,70 +2,68 @@
 
 This project presents the design and implementation of a Hotel Booking Management System to illustrate the practical application of Core Java and fundamental data structures in real-world scenarios. The system is developed incrementally, with each use case introducing a specific concept that addresses common software engineering challenges such as fair request handling, inventory consistency, and prevention of double-booking. By focusing on core logic and system behavior rather than user interface concerns, the project enables learners to understand not only how data structures are used, but why they are essential in scalable and maintainable software systems.
 
-Use Case 5: Booking Request (First-Come-First-Served)
+Use Case 6: Reservation Confirmation & Room Allocation
 -
+**Goal:**
 
-**Goal:** 
-
-Handle multiple booking requests fairly by introducing a request intake mechanism that preserves arrival order, reflecting real-world booking behavior during peak demand.
+Confirm booking requests by assigning rooms safely while ensuring inventory consistency and preventing double-booking under all circumstances.
 
 **Actor:**
 
-Reservation – represents a guest’s intent to book a room.
+Booking Service – processes queued booking requests and performs room allocation.
 
-Booking Request Queue – manages and orders incoming booking requests.
+Inventory Service – maintains and updates room availability state.
 
 **Flow:**
 
-Guest submits a booking request.
+Booking request is dequeued from the request queue.
 
-The request is added to the booking queue.
+The system checks availability for the requested room type.
 
-Requests are stored in arrival order.
+A unique room ID is generated and assigned.
 
-Queued requests wait for processing by the allocation system.
+The room ID is recorded to prevent reuse.
 
-No inventory mutation occurs at this stage.
+Inventory count is decremented immediately.
+
+Reservation is confirmed.
 
 **Key Concepts Used:**
 
-Problem of Simultaneous Requests - During peak demand, multiple booking requests can arrive at nearly the same time. Without ordering, requests may be processed inconsistently, leading to unfair allocation.
+Problem of Double Booking - Without controlled allocation, the same room may be assigned to multiple guests. This results in room ID collisions and inconsistent system state.
 
-Queue Data Structure - A Queue<Reservation> is used to store booking requests.
+Set Data Structure - A Set<String> is used to store allocated room IDs. Sets enforce uniqueness by design, preventing duplicate room assignments.
 
-Queues naturally model waiting lines where elements are processed in sequence.
+Uniqueness Enforcement - By checking against an existing set of room IDs, the system guarantees that no room is assigned more than once. This removes the need for manual duplicate checks.
 
-FIFO Principle - FIFO (First-Come-First-Served) ensures that the earliest request is processed first. This mirrors fairness expectations in real booking systems.
+Mapping Room Types to Assigned Rooms - A HashMap<String, Set<String>> maps each room type to its allocated room IDs. This allows grouped tracking and simplifies validation and reporting.
 
-Fairness - Using a queue guarantees that no request can bypass another. All guests are treated equally based on request arrival time.
+Atomic Logical Operations - Room allocation is treated as a single logical unit. Assignment and inventory update occur together to avoid partial or inconsistent state.
 
-Request Ordering - The queue preserves insertion order automatically. This eliminates the need for manual sorting or timestamp comparison.
-
-Decoupling Request Intake from Allocation - Requests are collected first and processed later. This separation prepares the system for controlled allocation and concurrency handling.
+Inventory Synchronization - Inventory is updated immediately after allocation. This ensures that availability reflects the current system state at all times.
 
 **Key Requirements:**
 
-Accept booking requests from guests.
+Retrieve booking requests from the queue in FIFO order.
 
-Store requests in a queue structure.
+Generate and assign a unique room ID for each confirmed reservation.
 
-Preserve the order in which requests arrive.
+Prevent reuse of room IDs across all allocations.
 
-Ensure no room allocation or inventory updates occur at this stage.
+Update inventory immediately after successful allocation.
 
-Prepare requests for subsequent processing.
+Ensure allocation logic maintains system consistency.
 
 **Key Benefits:**
 
-Fair and deterministic booking request handling
+Guaranteed uniqueness of room assignments
 
-Predictable system behavior under peak load
+Immediate synchronization between booking and inventory
 
-Simplified request coordination before allocation
+Elimination of double-booking scenarios
 
-**Drawbacks of Previous Use Case**
+**Drawbacks of Previous Use Case:**
 
-Use Case 4 allowed room visibility but did not handle booking intent.
+Use Case 5 handled request ordering but did not confirm bookings.
 
-Without a request intake mechanism, simultaneous booking attempts could not be managed fairly.
- 
+Without allocation and uniqueness enforcement, queued requests could still result in conflicting assignments.

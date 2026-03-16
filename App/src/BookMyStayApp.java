@@ -1,20 +1,17 @@
-import java.util.HashMap;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.LinkedList;
-import java.util.Queue;
+import java.util.*;
 
 /**
- * UseCase5BookingRequestQueue
+ * UseCase6RoomAllocationService
  *
- * Use Case 1: Entry point of the Hotel Booking System.
- * Use Case 2: Basic Room Types using abstraction and inheritance.
- * Use Case 3: Centralized Room Inventory using HashMap.
- * Use Case 4: Room Search & Availability Check (Read-only access).
- * Use Case 5: Booking Request (First-Come-First-Served Queue).
+ * Use Case 1: Application Entry
+ * Use Case 2: Room Domain Modeling
+ * Use Case 3: Centralized Room Inventory
+ * Use Case 4: Room Search (Read-only access)
+ * Use Case 5: Booking Request (FIFO Intake)
+ * Use Case 6: Reservation Confirmation & Room Allocation
  *
  * @author Eshan Pankaj Joshi
- * @version 5.0
+ * @version 6.0
  */
 public class BookMyStayApp {
 
@@ -25,8 +22,7 @@ public class BookMyStayApp {
         // =============================
         String appName = "Hotel Booking System";
         System.out.println("Welcome to " + appName);
-        System.out.println("System initialized successfully.");
-        System.out.println();
+        System.out.println("System initialized successfully.\n");
 
         // ===================================
         // Use Case 2: Room Domain Modeling
@@ -39,23 +35,17 @@ public class BookMyStayApp {
         // Use Case 3: Centralized Inventory
         // ===================================
         RoomInventory inventory = new RoomInventory();
-
         inventory.setAvailability(singleRoom.getRoomType(), 10);
         inventory.setAvailability(doubleRoom.getRoomType(), 5);
-        inventory.setAvailability(suiteRoom.getRoomType(), 2);
+        inventory.setAvailability(suiteRoom.getRoomType(), 1); // Only 1 suite available
 
         // ===================================
-        // Use Case 4: Room Search Service
+        // Use Case 4: Room Search (Read-Only)
         // ===================================
         RoomSearchService searchService = new RoomSearchService(inventory);
+        List<Room> roomCatalog = Arrays.asList(singleRoom, doubleRoom, suiteRoom);
 
-        List<Room> roomCatalog = new ArrayList<>();
-        roomCatalog.add(singleRoom);
-        roomCatalog.add(doubleRoom);
-        roomCatalog.add(suiteRoom);
-
-        System.out.println("Available Room Types (Search Results):");
-        System.out.println("--------------------------------------");
+        System.out.println("--- Current Room Availability ---");
         searchService.performSearch(roomCatalog);
 
         // ===================================
@@ -63,24 +53,70 @@ public class BookMyStayApp {
         // ===================================
         BookingRequestQueue bookingQueue = new BookingRequestQueue();
 
-        System.out.println("--- Processing Booking Requests ---");
+        System.out.println("--- Receiving Guest Requests ---");
+        bookingQueue.enqueueRequest(new Reservation("Alice", "Suite Room"));
+        bookingQueue.enqueueRequest(new Reservation("Bob", "Single Room"));
+        bookingQueue.enqueueRequest(new Reservation("Charlie", "Suite Room")); // Should fail (Stock is 1)
+        System.out.println();
 
-        // Simulating multiple guests submitting requests
-        bookingQueue.enqueueRequest(new Reservation("Guest_1: Eshan", "Suite Room"));
-        bookingQueue.enqueueRequest(new Reservation("Guest_2: Rahul", "Single Room"));
-        bookingQueue.enqueueRequest(new Reservation("Guest_3: Priya", "Double Room"));
+        // ===================================
+        // Use Case 6: Allocation & Confirmation
+        // ===================================
+        RoomAllocationService allocationService = new RoomAllocationService(inventory);
 
-        // Displaying the state of the queue
-        bookingQueue.displayQueueStatus();
+        System.out.println("--- Processing Allocations (FIFO) ---");
+        while (bookingQueue.hasPendingRequests()) {
+            Reservation request = bookingQueue.dequeueRequest();
+            allocationService.processAllocation(request);
+        }
 
-        System.out.println("Note: Inventory remains unchanged at " + inventory.getAvailability("Suite Room") + " Suites.");
-        System.out.println("Requests are ordered by arrival time (FIFO).");
+        System.out.println("\nFinal System State Check:");
+        System.out.println("Suite Availability: " + inventory.getAvailability("Suite Room"));
     }
 }
 
 /**
- * Use Case 5: Reservation Domain Object
- * Captures the intent of the guest.
+ * Use Case 6: Room Allocation Service
+ * Ensures uniqueness and inventory synchronization.
+ */
+class RoomAllocationService {
+    private RoomInventory inventory;
+    // Maps Room Type to a Set of assigned Room IDs to prevent double-booking
+    private HashMap<String, Set<String>> allocatedRooms;
+    private int idCounter = 101;
+
+    public RoomAllocationService(RoomInventory inventory) {
+        this.inventory = inventory;
+        this.allocatedRooms = new HashMap<>();
+        allocatedRooms.put("Single Room", new HashSet<>());
+        allocatedRooms.put("Double Room", new HashSet<>());
+        allocatedRooms.put("Suite Room", new HashSet<>());
+    }
+
+    public void processAllocation(Reservation request) {
+        String type = request.getRoomType();
+        int stock = inventory.getAvailability(type);
+
+        if (stock > 0) {
+            // Generate Unique ID (e.g., S-101)
+            String roomId = type.substring(0, 1).toUpperCase() + "-" + (idCounter++);
+
+            // Record the allocation to prevent double-booking
+            allocatedRooms.get(type).add(roomId);
+
+            // Immediate Inventory Update
+            inventory.updateAvailability(type, stock - 1);
+
+            System.out.println("CONFIRMED: " + request.getGuestName() +
+                    " assigned to " + roomId + " [" + type + "]");
+        } else {
+            System.out.println("FAILED: No availability for " + request.getGuestName() + " (" + type + ")");
+        }
+    }
+}
+
+/**
+ * Use Case 5: Booking Request & Queue
  */
 class Reservation {
     private String guestName;
@@ -93,47 +129,22 @@ class Reservation {
 
     public String getGuestName() { return guestName; }
     public String getRoomType() { return roomType; }
-
-    @Override
-    public String toString() {
-        return "Reservation Request [" + guestName + " for " + roomType + "]";
-    }
 }
 
-/**
- * Use Case 5: Booking Request Queue
- * Decouples request intake from allocation using FIFO logic.
- */
 class BookingRequestQueue {
-    private Queue<Reservation> queue;
+    private Queue<Reservation> queue = new LinkedList<>();
 
-    public BookingRequestQueue() {
-        this.queue = new LinkedList<>();
+    public void enqueueRequest(Reservation res) {
+        queue.add(res);
+        System.out.println("Enqueued: " + res.getGuestName() + " (" + res.getRoomType() + ")");
     }
 
-    // Add request to the end of the line
-    public void enqueueRequest(Reservation reservation) {
-        queue.add(reservation);
-        System.out.println("Enqueued: " + reservation);
-    }
-
-    // Display current waiting line
-    public void displayQueueStatus() {
-        System.out.println("\nCurrent Waiting List:");
-        for (Reservation res : queue) {
-            System.out.println(" - " + res);
-        }
-        System.out.println();
-    }
-
-    // Retrieve the next request for processing
-    public Reservation dequeueRequest() {
-        return queue.poll();
-    }
+    public Reservation dequeueRequest() { return queue.poll(); }
+    public boolean hasPendingRequests() { return !queue.isEmpty(); }
 }
 
 /**
- * Use Case 4: Room Search Service
+ * Use Case 4: Search Service
  */
 class RoomSearchService {
     private RoomInventory inventory;
@@ -144,9 +155,9 @@ class RoomSearchService {
 
     public void performSearch(List<Room> rooms) {
         for (Room room : rooms) {
-            int availability = inventory.getAvailability(room.getRoomType());
-            if (availability > 0) {
-                System.out.println(room.getRoomType() + " | Price: $" + room.getPrice() + " | Available: " + availability);
+            int count = inventory.getAvailability(room.getRoomType());
+            if (count > 0) {
+                System.out.println(room.getRoomType() + ": " + count + " available at $" + room.getPrice());
             }
         }
         System.out.println();
@@ -157,23 +168,11 @@ class RoomSearchService {
  * Use Case 3: Centralized Room Inventory
  */
 class RoomInventory {
-    private HashMap<String, Integer> inventory;
+    private HashMap<String, Integer> inventory = new HashMap<>();
 
-    public RoomInventory() {
-        inventory = new HashMap<>();
-    }
-
-    public void setAvailability(String roomType, int count) {
-        inventory.put(roomType, count);
-    }
-
-    public int getAvailability(String roomType) {
-        return inventory.getOrDefault(roomType, 0);
-    }
-
-    public void updateAvailability(String roomType, int count) {
-        inventory.put(roomType, count);
-    }
+    public void setAvailability(String roomType, int count) { inventory.put(roomType, count); }
+    public int getAvailability(String roomType) { return inventory.getOrDefault(roomType, 0); }
+    public void updateAvailability(String roomType, int count) { inventory.put(roomType, count); }
 }
 
 /**
@@ -181,35 +180,29 @@ class RoomInventory {
  */
 abstract class Room {
     private int beds;
-    private int size;
     private double price;
 
-    public Room(int beds, int size, double price) {
+    public Room(int beds, double price) {
         this.beds = beds;
-        this.size = size;
         this.price = price;
     }
 
     public int getBeds() { return beds; }
-    public int getSize() { return size; }
     public double getPrice() { return price; }
     public abstract String getRoomType();
 }
 
-/**
- * Use Case 2: Room Specializations
- */
 class SingleRoom extends Room {
-    public SingleRoom() { super(1, 200, 80.0); }
+    public SingleRoom() { super(1, 80.0); }
     @Override public String getRoomType() { return "Single Room"; }
 }
 
 class DoubleRoom extends Room {
-    public DoubleRoom() { super(2, 350, 120.0); }
+    public DoubleRoom() { super(2, 120.0); }
     @Override public String getRoomType() { return "Double Room"; }
 }
 
 class SuiteRoom extends Room {
-    public SuiteRoom() { super(3, 600, 250.0); }
+    public SuiteRoom() { super(3, 250.0); }
     @Override public String getRoomType() { return "Suite Room"; }
 }
