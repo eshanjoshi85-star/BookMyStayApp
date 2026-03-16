@@ -2,66 +2,69 @@
 
 This project presents the design and implementation of a Hotel Booking Management System to illustrate the practical application of Core Java and fundamental data structures in real-world scenarios. The system is developed incrementally, with each use case introducing a specific concept that addresses common software engineering challenges such as fair request handling, inventory consistency, and prevention of double-booking. By focusing on core logic and system behavior rather than user interface concerns, the project enables learners to understand not only how data structures are used, but why they are essential in scalable and maintainable software systems.
 
-Use Case 2:Basic Room Types & Static Availability
+Use Case 4: Room Search & Availability Check
 -
-**Goal:** 
 
-Introduce object modeling through inheritance and abstraction before introducing data structures, allowing students to focus on domain design rather than optimization.
+**Goal: **
 
-**Actor:** 
+Enable guests to view available rooms and their details without modifying system state, reinforcing safe data access and clear separation of responsibilities.
 
-User – runs the application to view predefined room types and their availability.
+**Actor:**
+
+Guest – initiates a search to view available room options.
+
+Search Service – handles read-only access to inventory and room information.
 
 **Flow:**
 
-User runs the application.
+Guest initiates a room search request.
 
-Room objects representing different room types are created.
+The system retrieves availability data from the inventory.
 
-Availability for each room type is stored using simple variables.
+Room details and pricing are obtained from room objects.
 
-Room details and availability information are printed to the console.
+Unavailable room types are filtered out.
 
-Application terminates.
+Available room types and their details are displayed.
+
+System state remains unchanged.
 
 **Key Concepts Used**
 
-Abstract Class - An abstract class is used to represent a generalized concept that should not be instantiated directly. The Room class defines common attributes and behavior shared by all room types while enforcing a consistent structure.
+Read-Only Access - Search operations are designed to read data without altering it. This prevents unintended side effects and ensures system stability.
 
-Inheritance - Concrete room classes (SingleRoom, DoubleRoom, SuiteRoom) extend the abstract Room class. This allows shared properties to be reused while enabling specialization for each room type.
+Defensive Programming - The search logic performs checks to ensure only valid and available room types are displayed. This protects the system from incorrect assumptions and invalid data usage.
 
-Polymorphism - Room objects are referenced using the Room type, enabling uniform handling of different room implementations. This prepares the system for future extensibility without changing client code.
+Separation of Concerns - Search functionality is isolated from inventory mutation and booking logic. This ensures that searching does not interfere with allocation or availability updates.
 
-Encapsulation - Room attributes such as number of beds, size, and price are encapsulated within the Room class. This ensures that room characteristics are controlled and modified only through defined behavior.
+Inventory as State Holder - Inventory is accessed only to retrieve current availability counts. No updates are performed during search operations.
 
-Static Availability Representation - Room availability is stored using simple variables rather than data structures. This intentionally highlights the limitations of hardcoded and scattered state management.
+Domain Model Usage -  Room objects provide descriptive information such as pricing and amenities. This avoids duplicating room-related data in the inventory layer.
 
-Separation of Domain and State - Room objects represent what a room is, while availability variables represent current system state. This distinction becomes critical when inventory management is introduced later.
+Validation Logic - Room types with zero availability are excluded from the search results. This ensures that guests see only actionable options.
 
 **Key Requirements**
 
-Define an abstract Room class with common attributes.
+Retrieve room availability from the centralized inventory.
 
-Create concrete room classes for Single, Double, and Suite rooms.
+Display only room types with availability greater than zero.
 
-Initialize room objects in the application entry point.
+Show room details and pricing using room domain objects.
 
-Store room availability using individual variables.
+Ensure inventory data is not modified during search operations.
 
-Display room details and availability to the console.
+Maintain a clear boundary between search logic and booking logic.
 
 **Key Benefits**
 
-Clear introduction to object-oriented domain modeling
+Accurate availability visibility without state mutation
 
-Demonstrates inheritance and abstraction in a real-world context
+Reduced risk of accidental inventory corruption
 
-Establishes a strong foundation for later inventory refactoring
+Clear separation between read-only and write operations
 
 **Drawbacks of Previous Use Case**
 
-Use Case 1 focused only on application startup and execution flow.
+Use Case 3 introduced centralized inventory but did not differentiate between read and write access.
 
-
-
-This approach does not scale and increases the risk of inconsistent system state as complexity grows.
+Without explicit separation, inventory could be accidentally modified during non-booking operations. state as complexity grows.
