@@ -2,66 +2,70 @@
 
 This project presents the design and implementation of a Hotel Booking Management System to illustrate the practical application of Core Java and fundamental data structures in real-world scenarios. The system is developed incrementally, with each use case introducing a specific concept that addresses common software engineering challenges such as fair request handling, inventory consistency, and prevention of double-booking. By focusing on core logic and system behavior rather than user interface concerns, the project enables learners to understand not only how data structures are used, but why they are essential in scalable and maintainable software systems.
 
-Use Case 2:Basic Room Types & Static Availability
+Use Case 5: Booking Request (First-Come-First-Served)
 -
+
 **Goal:** 
 
-Introduce object modeling through inheritance and abstraction before introducing data structures, allowing students to focus on domain design rather than optimization.
+Handle multiple booking requests fairly by introducing a request intake mechanism that preserves arrival order, reflecting real-world booking behavior during peak demand.
 
-**Actor:** 
+**Actor:**
 
-User – runs the application to view predefined room types and their availability.
+Reservation – represents a guest’s intent to book a room.
+
+Booking Request Queue – manages and orders incoming booking requests.
 
 **Flow:**
 
-User runs the application.
+Guest submits a booking request.
 
-Room objects representing different room types are created.
+The request is added to the booking queue.
 
-Availability for each room type is stored using simple variables.
+Requests are stored in arrival order.
 
-Room details and availability information are printed to the console.
+Queued requests wait for processing by the allocation system.
 
-Application terminates.
+No inventory mutation occurs at this stage.
 
-**Key Concepts Used**
+**Key Concepts Used:**
 
-Abstract Class - An abstract class is used to represent a generalized concept that should not be instantiated directly. The Room class defines common attributes and behavior shared by all room types while enforcing a consistent structure.
+Problem of Simultaneous Requests - During peak demand, multiple booking requests can arrive at nearly the same time. Without ordering, requests may be processed inconsistently, leading to unfair allocation.
 
-Inheritance - Concrete room classes (SingleRoom, DoubleRoom, SuiteRoom) extend the abstract Room class. This allows shared properties to be reused while enabling specialization for each room type.
+Queue Data Structure - A Queue<Reservation> is used to store booking requests.
 
-Polymorphism - Room objects are referenced using the Room type, enabling uniform handling of different room implementations. This prepares the system for future extensibility without changing client code.
+Queues naturally model waiting lines where elements are processed in sequence.
 
-Encapsulation - Room attributes such as number of beds, size, and price are encapsulated within the Room class. This ensures that room characteristics are controlled and modified only through defined behavior.
+FIFO Principle - FIFO (First-Come-First-Served) ensures that the earliest request is processed first. This mirrors fairness expectations in real booking systems.
 
-Static Availability Representation - Room availability is stored using simple variables rather than data structures. This intentionally highlights the limitations of hardcoded and scattered state management.
+Fairness - Using a queue guarantees that no request can bypass another. All guests are treated equally based on request arrival time.
 
-Separation of Domain and State - Room objects represent what a room is, while availability variables represent current system state. This distinction becomes critical when inventory management is introduced later.
+Request Ordering - The queue preserves insertion order automatically. This eliminates the need for manual sorting or timestamp comparison.
 
-**Key Requirements**
+Decoupling Request Intake from Allocation - Requests are collected first and processed later. This separation prepares the system for controlled allocation and concurrency handling.
 
-Define an abstract Room class with common attributes.
+**Key Requirements:**
 
-Create concrete room classes for Single, Double, and Suite rooms.
+Accept booking requests from guests.
 
-Initialize room objects in the application entry point.
+Store requests in a queue structure.
 
-Store room availability using individual variables.
+Preserve the order in which requests arrive.
 
-Display room details and availability to the console.
+Ensure no room allocation or inventory updates occur at this stage.
 
-**Key Benefits**
+Prepare requests for subsequent processing.
 
-Clear introduction to object-oriented domain modeling
+**Key Benefits:**
 
-Demonstrates inheritance and abstraction in a real-world context
+Fair and deterministic booking request handling
 
-Establishes a strong foundation for later inventory refactoring
+Predictable system behavior under peak load
+
+Simplified request coordination before allocation
 
 **Drawbacks of Previous Use Case**
 
-Use Case 1 focused only on application startup and execution flow.
+Use Case 4 allowed room visibility but did not handle booking intent.
 
-
-
-This approach does not scale and increases the risk of inconsistent system state as complexity grows.
+Without a request intake mechanism, simultaneous booking attempts could not be managed fairly.
+ 
