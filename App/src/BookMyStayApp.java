@@ -1,17 +1,20 @@
 import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.LinkedList;
+import java.util.Queue;
 
 /**
- * UseCase4RoomSearch
+ * UseCase5BookingRequestQueue
  *
  * Use Case 1: Entry point of the Hotel Booking System.
  * Use Case 2: Basic Room Types using abstraction and inheritance.
  * Use Case 3: Centralized Room Inventory using HashMap.
- * Use Case 4: Room Search & Availability Check (Read-Only Access).
+ * Use Case 4: Room Search & Availability Check (Read-only access).
+ * Use Case 5: Booking Request (First-Come-First-Served Queue).
  *
  * @author Eshan Pankaj Joshi
- * @version 4.0
+ * @version 5.0
  */
 public class BookMyStayApp {
 
@@ -37,37 +40,100 @@ public class BookMyStayApp {
         // ===================================
         RoomInventory inventory = new RoomInventory();
 
-        // Setting initial state
         inventory.setAvailability(singleRoom.getRoomType(), 10);
-        inventory.setAvailability(doubleRoom.getRoomType(), 0); // Testing 0 availability
+        inventory.setAvailability(doubleRoom.getRoomType(), 5);
         inventory.setAvailability(suiteRoom.getRoomType(), 2);
 
         // ===================================
         // Use Case 4: Room Search Service
         // ===================================
-        // Initializing the Search Service with the existing inventory
         RoomSearchService searchService = new RoomSearchService(inventory);
 
-        // Creating a list of rooms to search through
         List<Room> roomCatalog = new ArrayList<>();
         roomCatalog.add(singleRoom);
         roomCatalog.add(doubleRoom);
         roomCatalog.add(suiteRoom);
 
-        System.out.println("--- Guest Room Search Results ---");
-        System.out.println("Displaying only available options:");
-        System.out.println("----------------------------------");
-
-        // Perform the search (Read-only operation)
+        System.out.println("Available Room Types (Search Results):");
+        System.out.println("--------------------------------------");
         searchService.performSearch(roomCatalog);
 
-        System.out.println("Search complete. No inventory state was modified.");
+        // ===================================
+        // Use Case 5: Booking Request Intake
+        // ===================================
+        BookingRequestQueue bookingQueue = new BookingRequestQueue();
+
+        System.out.println("--- Processing Booking Requests ---");
+
+        // Simulating multiple guests submitting requests
+        bookingQueue.enqueueRequest(new Reservation("Guest_1: Eshan", "Suite Room"));
+        bookingQueue.enqueueRequest(new Reservation("Guest_2: Rahul", "Single Room"));
+        bookingQueue.enqueueRequest(new Reservation("Guest_3: Priya", "Double Room"));
+
+        // Displaying the state of the queue
+        bookingQueue.displayQueueStatus();
+
+        System.out.println("Note: Inventory remains unchanged at " + inventory.getAvailability("Suite Room") + " Suites.");
+        System.out.println("Requests are ordered by arrival time (FIFO).");
     }
 }
 
 /**
- * Use Case 4: Search Service
- * Handles read-only access to inventory.
+ * Use Case 5: Reservation Domain Object
+ * Captures the intent of the guest.
+ */
+class Reservation {
+    private String guestName;
+    private String roomType;
+
+    public Reservation(String guestName, String roomType) {
+        this.guestName = guestName;
+        this.roomType = roomType;
+    }
+
+    public String getGuestName() { return guestName; }
+    public String getRoomType() { return roomType; }
+
+    @Override
+    public String toString() {
+        return "Reservation Request [" + guestName + " for " + roomType + "]";
+    }
+}
+
+/**
+ * Use Case 5: Booking Request Queue
+ * Decouples request intake from allocation using FIFO logic.
+ */
+class BookingRequestQueue {
+    private Queue<Reservation> queue;
+
+    public BookingRequestQueue() {
+        this.queue = new LinkedList<>();
+    }
+
+    // Add request to the end of the line
+    public void enqueueRequest(Reservation reservation) {
+        queue.add(reservation);
+        System.out.println("Enqueued: " + reservation);
+    }
+
+    // Display current waiting line
+    public void displayQueueStatus() {
+        System.out.println("\nCurrent Waiting List:");
+        for (Reservation res : queue) {
+            System.out.println(" - " + res);
+        }
+        System.out.println();
+    }
+
+    // Retrieve the next request for processing
+    public Reservation dequeueRequest() {
+        return queue.poll();
+    }
+}
+
+/**
+ * Use Case 4: Room Search Service
  */
 class RoomSearchService {
     private RoomInventory inventory;
@@ -76,24 +142,14 @@ class RoomSearchService {
         this.inventory = inventory;
     }
 
-    /**
-     * Requirement: Retrieve availability and display only rooms > 0.
-     * Ensures Separation of Concerns and Defensive Programming.
-     */
     public void performSearch(List<Room> rooms) {
         for (Room room : rooms) {
-            int count = inventory.getAvailability(room.getRoomType());
-
-            // Validation Logic: Filter out unavailable rooms
-            if (count > 0) {
-                System.out.println("Room Type:  " + room.getRoomType());
-                System.out.println("Beds:       " + room.getBeds());
-                System.out.println("Price:      $" + room.getPrice());
-                System.out.println("Available:  " + count);
-                System.out.println("Status:     Ready for Booking");
-                System.out.println();
+            int availability = inventory.getAvailability(room.getRoomType());
+            if (availability > 0) {
+                System.out.println(room.getRoomType() + " | Price: $" + room.getPrice() + " | Available: " + availability);
             }
         }
+        System.out.println();
     }
 }
 
@@ -141,7 +197,7 @@ abstract class Room {
 }
 
 /**
- * Use Case 2: Concrete Room Implementations
+ * Use Case 2: Room Specializations
  */
 class SingleRoom extends Room {
     public SingleRoom() { super(1, 200, 80.0); }
