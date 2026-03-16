@@ -63,3 +63,5 @@ Establishes a strong foundation for later inventory refactoring
 Use Case 1 focused only on application startup and execution flow.
 
 No domain modeling or business concepts were introduced, limiting system realism.
+
+
