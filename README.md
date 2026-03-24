@@ -2,68 +2,70 @@
 
 This project presents the design and implementation of a Hotel Booking Management System to illustrate the practical application of Core Java and fundamental data structures in real-world scenarios. The system is developed incrementally, with each use case introducing a specific concept that addresses common software engineering challenges such as fair request handling, inventory consistency, and prevention of double-booking. By focusing on core logic and system behavior rather than user interface concerns, the project enables learners to understand not only how data structures are used, but why they are essential in scalable and maintainable software systems.
 
-Use Case 6: Reservation Confirmation & Room Allocation
--
-**Goal:**
 
-Confirm booking requests by assigning rooms safely while ensuring inventory consistency and preventing double-booking under all circumstances.
+Use Case 7: Add-On Service Selection
+-
+
+**Goal:** 
+
+Extend the booking model to support optional services, demonstrating how real-world business features can be added without modifying core booking or allocation logic.
 
 **Actor:**
 
-Booking Service – processes queued booking requests and performs room allocation.
+Guest – selects optional services for an existing reservation.
 
-Inventory Service – maintains and updates room availability state.
+Add-On Service – represents an individual optional offering.
+
+Add-On Service Manager – manages the association between reservations and selected services.
 
 **Flow:**
 
-Booking request is dequeued from the request queue.
+Guest selects one or more add-on services.
 
-The system checks availability for the requested room type.
+Selected services are added to a list.
 
-A unique room ID is generated and assigned.
+The list of services is mapped to the corresponding reservation ID.
 
-The room ID is recorded to prevent reuse.
+Additional cost for the reservation is calculated.
 
-Inventory count is decremented immediately.
+Core booking and inventory state remain unchanged.
 
-Reservation is confirmed.
+**Key Concepts Used**
 
-**Key Concepts Used:**
+Business Extensibility - Real-world bookings often include additional offerings beyond the primary product. The system must support new features without disrupting existing logic.
 
-Problem of Double Booking - Without controlled allocation, the same room may be assigned to multiple guests. This results in room ID collisions and inconsistent system state.
+One-to-Many Relationship - A single reservation can have multiple associated services. This relationship is modeled using a map from reservation ID to a list of services.
 
-Set Data Structure - A Set<String> is used to store allocated room IDs. Sets enforce uniqueness by design, preventing duplicate room assignments.
+Map and List Combination - Map<String, List<Service>> allows efficient lookup of services for a reservation. Lists preserve insertion order and allow multiple services to be attached.
 
-Uniqueness Enforcement - By checking against an existing set of room IDs, the system guarantees that no room is assigned more than once. This removes the need for manual duplicate checks.
+Composition over Inheritance - Services are composed with reservations rather than inherited. This avoids rigid class hierarchies and supports flexible feature growth.
 
-Mapping Room Types to Assigned Rooms - A HashMap<String, Set<String>> maps each room type to its allocated room IDs. This allows grouped tracking and simplifies validation and reporting.
+Separation of Core and Optional Features - Add-on services are managed independently of room allocation and inventory. This prevents optional features from complicating critical booking workflows.
 
-Atomic Logical Operations - Room allocation is treated as a single logical unit. Assignment and inventory update occur together to avoid partial or inconsistent state.
+Cost Aggregation - Service costs are calculated separately and combined when needed. This keeps pricing logic modular and easier to extend.
 
-Inventory Synchronization - Inventory is updated immediately after allocation. This ensures that availability reflects the current system state at all times.
+**Key Requirements**
 
-**Key Requirements:**
+Allow multiple services to be attached to a single reservation.
 
-Retrieve booking requests from the queue in FIFO order.
+Store selected services using a reservation-to-services mapping.
 
-Generate and assign a unique room ID for each confirmed reservation.
+Calculate total additional cost for selected services.
 
-Prevent reuse of room IDs across all allocations.
+Ensure add-on logic does not modify booking or inventory state.
 
-Update inventory immediately after successful allocation.
+Support easy addition of new service types.
 
-Ensure allocation logic maintains system consistency.
+**Key Benefits**
 
-**Key Benefits:**
+Flexible attachment of optional services to reservations
 
-Guaranteed uniqueness of room assignments
+Clean mapping between bookings and value-added features
 
-Immediate synchronization between booking and inventory
+Easy expansion of services without core booking changes
 
-Elimination of double-booking scenarios
+**Drawbacks of Previous Use Case**
 
-**Drawbacks of Previous Use Case:**
+Use Case 6 confirmed room allocation but treated bookings as static entities.
 
-Use Case 5 handled request ordering but did not confirm bookings.
-
-Without allocation and uniqueness enforcement, queued requests could still result in conflicting assignments.
+Without add-on support, the system could not model common real-world booking enhancements.
