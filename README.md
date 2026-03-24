@@ -3,72 +3,67 @@
 This project presents the design and implementation of a Hotel Booking Management System to illustrate the practical application of Core Java and fundamental data structures in real-world scenarios. The system is developed incrementally, with each use case introducing a specific concept that addresses common software engineering challenges such as fair request handling, inventory consistency, and prevention of double-booking. By focusing on core logic and system behavior rather than user interface concerns, the project enables learners to understand not only how data structures are used, but why they are essential in scalable and maintainable software systems.
 
 
-Use Case 8: Booking History & Reporting
+Use Case 9: Error Handling & Validation
 -
+
 **Goal:** 
 
-Introduce historical tracking of confirmed bookings to provide operational visibility, enable audits, and support reporting, reinforcing a persistence-oriented mindset without introducing external storage.
+Strengthen system reliability by introducing structured validation and error handling, ensuring that invalid inputs and inconsistent states are detected and handled early.
 
 **Actor:**
 
-Admin – reviews booking history and reports for operational purposes.
+Guest – provides booking input that must be validated.
 
-Booking History – maintains a record of confirmed reservations.
-
-Booking Report Service – generates summaries and reports from stored booking data.
+Invalid Booking Validator – validates input and system state before processing requests.
 
 **Flow:**
 
-A booking is successfully confirmed.
+Guest provides booking input.
 
-The confirmed reservation is added to booking history.
+System validates input values and system constraints.
 
-Booking history maintains records in insertion order.
+If validation fails, an error is raised immediately.
 
-Admin requests booking information or reports.
+A meaningful failure message is displayed.
 
-Stored reservations are retrieved and displayed as required.
+The system prevents invalid state changes and continues running safely.
 
 **Key Concepts Used**
 
-Operational Visibility - Real systems require visibility into past transactions.
+Input Validation - Validation ensures that incoming data conforms to expected rules before processing. This prevents invalid or inconsistent data from entering the system.
 
-Historical data allows administrators to understand system usage and behavior.
+Custom Exceptions - Domain-specific exceptions are used to represent invalid booking scenarios. Custom exceptions make error causes explicit and improve code readability.
 
-List Data Structure - A List<Reservation> is used to store confirmed bookings. Lists preserve insertion order, making them suitable for chronological records.
+Fail-Fast Design - The system detects errors as early as possible and stops further processing. This avoids cascading failures and simplifies debugging.
 
-Ordered Storage - Bookings are stored in the order they are confirmed. This naturally reflects real-world timelines and supports sequential reporting.
+Guarding System State - Checks are performed before inventory updates or allocations. This ensures that critical state, such as availability counts, remains valid.
 
-Historical Tracking - Once stored, bookings form an audit trail. This enables later review, analysis, and verification of system actions.
+Graceful Failure Handling - Errors are communicated clearly without crashing the application. This improves system usability and maintainability.
 
-Reporting Readiness - Storing structured booking data prepares the system for reporting. Reports can be generated without reprocessing live booking flows.
-
-Separation of Data Storage and Reporting - Booking history focuses on storing data. Reporting logic is delegated to a separate service, reducing coupling.
-
-Persistence Mindset (Without Storage Medium) - Although data is stored in memory, the system treats history as long-lived information. This prepares learners conceptually for file-based or database persistence in later stages.
+Correctness over Happy Path - The system is designed to handle incorrect usage, not just ideal scenarios. This reflects real-world conditions where invalid input is common.
 
 **Key Requirements**
 
-Store each confirmed reservation in booking history.
+Validate room types before processing bookings.
 
-Maintain bookings in the order they are confirmed.
+Prevent inventory from reaching invalid or negative values.
 
-Allow retrieval of stored reservations for review.
+Throw and handle custom exceptions for invalid scenarios.
 
-Generate summary reports from booking history.
+Display clear and informative failure messages.
 
-Ensure reporting does not modify stored booking data.
+Ensure the system remains stable after errors.
 
 **Key Benefits**
 
-Complete and traceable booking audit trail
+Early detection of invalid system states
 
-Simplified reporting and administrative analysis
+Reduced risk of silent data corruption
 
-Improved support for customer issue resolution
+More stable and predictable application behavior
 
 **Drawbacks of Previous Use Case**
 
-Use Case 7 extended booking functionality but did not retain historical data.
-Without booking history, completed transactions could not be reviewed or analyzed.
-Cost Aggregation - Service costs are calculated separately and combined when needed. This keeps pricing logic modular and easier to extend.
+Use Case 8 focused on storing and reporting booking data but assumed valid input.
+
+Without validation, incorrect data could corrupt system state and reports.

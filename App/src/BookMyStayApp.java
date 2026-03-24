@@ -1,7 +1,7 @@
 import java.util.*;
 
 /**
- * UseCase8BookingHistoryReport
+ * UseCase9ErrorHandlingValidation
  *
  * Use Case 1: Application Entry
  * Use Case 2: Room Domain Modeling
@@ -11,9 +11,10 @@ import java.util.*;
  * Use Case 6: Reservation Confirmation & Room Allocation
  * Use Case 7: Add-On Service Selection
  * Use Case 8: Booking History & Reporting
+ * Use Case 9: Error Handling & Validation
  *
  * @author Eshan Pankaj Joshi
- * @version 8.0
+ * @version 9.0
  */
 public class BookMyStayApp {
 
@@ -22,8 +23,7 @@ public class BookMyStayApp {
         // =============================
         // Use Case 1: Application Entry
         // =============================
-        String appName = "Hotel Booking System";
-        System.out.println("Welcome to " + appName);
+        System.out.println("Welcome to Hotel Booking System");
         System.out.println("System initialized successfully.\n");
 
         // ===================================
@@ -37,270 +37,193 @@ public class BookMyStayApp {
         // Use Case 3: Centralized Inventory
         // ===================================
         RoomInventory inventory = new RoomInventory();
-        inventory.setAvailability(singleRoom.getRoomType(), 10);
-        inventory.setAvailability(doubleRoom.getRoomType(), 5);
-        inventory.setAvailability(suiteRoom.getRoomType(), 1);
+        inventory.setAvailability(singleRoom.getRoomType(), 2);
+        inventory.setAvailability(doubleRoom.getRoomType(), 1);
+        inventory.setAvailability(suiteRoom.getRoomType(), 0);
 
         // ===================================
-        // Use Case 4: Room Search (Read-Only)
+        // Use Case 4: Room Search
         // ===================================
         RoomSearchService searchService = new RoomSearchService(inventory);
-        List<Room> roomCatalog = Arrays.asList(singleRoom, doubleRoom, suiteRoom);
+        List<Room> rooms = Arrays.asList(singleRoom, doubleRoom, suiteRoom);
 
-        System.out.println("--- Current Room Availability ---");
-        searchService.performSearch(roomCatalog);
-
-        // ===================================
-        // Use Case 5: Booking Request Intake
-        // ===================================
-        BookingRequestQueue bookingQueue = new BookingRequestQueue();
-
-        System.out.println("--- Receiving Guest Requests ---");
-        bookingQueue.enqueueRequest(new Reservation("Alice", "Suite Room"));
-        bookingQueue.enqueueRequest(new Reservation("Bob", "Single Room"));
-        bookingQueue.enqueueRequest(new Reservation("Charlie", "Suite Room"));
-        System.out.println();
+        System.out.println("--- Room Availability ---");
+        searchService.performSearch(rooms);
 
         // ===================================
-        // Use Case 6: Allocation & Confirmation
+        // Use Case 5: Booking Queue
+        // ===================================
+        BookingRequestQueue queue = new BookingRequestQueue();
+
+        queue.enqueueRequest(new Reservation("R1", "Alice", "Suite Room"));
+        queue.enqueueRequest(new Reservation("R2", "Bob", "Single Room"));
+        queue.enqueueRequest(new Reservation("R3", "Charlie", "Invalid Room"));
+
+        // ===================================
+        // Use Case 9: Validation
+        // ===================================
+        InvalidBookingValidator validator = new InvalidBookingValidator();
+
+        // ===================================
+        // Use Case 6: Allocation with Validation
         // ===================================
         RoomAllocationService allocationService = new RoomAllocationService(inventory);
 
-        // Store confirmed reservations (for Use Case 7 & 8)
-        List<Reservation> confirmedReservations = new ArrayList<>();
+        System.out.println("\n--- Processing Bookings with Validation ---");
 
-        System.out.println("--- Processing Allocations (FIFO) ---");
-        while (bookingQueue.hasPendingRequests()) {
-            Reservation request = bookingQueue.dequeueRequest();
+        while (queue.hasPendingRequests()) {
 
-            int before = inventory.getAvailability(request.getRoomType());
+            Reservation res = queue.dequeueRequest();
 
-            allocationService.processAllocation(request);
+            try {
 
-            int after = inventory.getAvailability(request.getRoomType());
+                validator.validate(res, inventory);
 
-            if (after < before) {
-                confirmedReservations.add(request);
+                allocationService.processAllocation(res);
+
+            } catch (InvalidBookingException e) {
+
+                System.out.println("ERROR: " + e.getMessage());
             }
         }
 
-        // ===================================
-        // Use Case 7: Add-On Service Selection
-        // ===================================
-        AddOnServiceManager serviceManager = new AddOnServiceManager();
-
-        System.out.println("\n--- Add-On Service Selection ---");
-
-        AddOnService breakfast = new AddOnService("Breakfast", 500);
-        AddOnService spa = new AddOnService("Spa Access", 2000);
-        AddOnService pickup = new AddOnService("Airport Pickup", 1200);
-
-        for (Reservation res : confirmedReservations) {
-
-            serviceManager.addService(res.getGuestName(), breakfast);
-
-            if (res.getRoomType().equals("Suite Room")) {
-                serviceManager.addService(res.getGuestName(), spa);
-            } else {
-                serviceManager.addService(res.getGuestName(), pickup);
-            }
-        }
-
-        System.out.println("\n--- Add-On Summary ---");
-        for (Reservation res : confirmedReservations) {
-
-            System.out.println("Guest: " + res.getGuestName());
-
-            List<AddOnService> services =
-                    serviceManager.getServices(res.getGuestName());
-
-            for (AddOnService s : services) {
-                System.out.println("- " + s);
-            }
-
-            double total = serviceManager.calculateTotalCost(res.getGuestName());
-            System.out.println("Total Add-On Cost: ₹" + total + "\n");
-        }
-
-        // ===================================
-        // Use Case 8: Booking History & Reporting
-        // ===================================
-        BookingHistory bookingHistory = new BookingHistory();
-        BookingReportService reportService = new BookingReportService();
-
-        for (Reservation res : confirmedReservations) {
-            bookingHistory.addReservation(res);
-        }
-
-        System.out.println("\n--- Booking History ---");
-        reportService.displayAllBookings(bookingHistory.getReservations());
-
-        reportService.generateSummary(bookingHistory.getReservations());
-
-        System.out.println("\nFinal System State Check:");
-        System.out.println("Suite Availability: " + inventory.getAvailability("Suite Room"));
+        System.out.println("\n--- Final Inventory State ---");
+        System.out.println("Single Room: " + inventory.getAvailability("Single Room"));
+        System.out.println("Double Room: " + inventory.getAvailability("Double Room"));
+        System.out.println("Suite Room: " + inventory.getAvailability("Suite Room"));
     }
 }
 
 /**
- * Use Case 8: Booking History Storage
+ * Use Case 9: Custom Exception
  */
-class BookingHistory {
-    private List<Reservation> reservations = new ArrayList<>();
-
-    public void addReservation(Reservation reservation) {
-        reservations.add(reservation);
-    }
-
-    public List<Reservation> getReservations() {
-        return Collections.unmodifiableList(reservations);
+class InvalidBookingException extends Exception {
+    public InvalidBookingException(String message) {
+        super(message);
     }
 }
 
 /**
- * Use Case 8: Reporting Service
+ * Use Case 9: Validator
  */
-class BookingReportService {
+class InvalidBookingValidator {
 
-    public void displayAllBookings(List<Reservation> reservations) {
-        for (Reservation r : reservations) {
-            System.out.println("Guest: " + r.getGuestName() +
-                    ", Room: " + r.getRoomType());
-        }
-    }
+    public void validate(Reservation res, RoomInventory inventory)
+            throws InvalidBookingException {
 
-    public void generateSummary(List<Reservation> reservations) {
-
-        int totalBookings = reservations.size();
-
-        Map<String, Integer> roomTypeCount = new HashMap<>();
-
-        for (Reservation r : reservations) {
-            roomTypeCount.put(
-                    r.getRoomType(),
-                    roomTypeCount.getOrDefault(r.getRoomType(), 0) + 1
-            );
+        // Validate room type
+        if (!inventory.containsRoomType(res.getRoomType())) {
+            throw new InvalidBookingException("Invalid Room Type: " + res.getRoomType());
         }
 
-        System.out.println("\n--- Booking Summary Report ---");
-        System.out.println("Total Bookings: " + totalBookings);
+        // Validate availability
+        if (inventory.getAvailability(res.getRoomType()) <= 0) {
+            throw new InvalidBookingException("No availability for " + res.getRoomType());
+        }
 
-        for (String type : roomTypeCount.keySet()) {
-            System.out.println(type + ": " + roomTypeCount.get(type));
+        // Validate guest name
+        if (res.getGuestName() == null || res.getGuestName().trim().isEmpty()) {
+            throw new InvalidBookingException("Invalid Guest Name");
         }
     }
 }
 
 /**
- * Use Case 7: Add-On Service Model
- */
-class AddOnService {
-    private String name;
-    private double cost;
-
-    public AddOnService(String name, double cost) {
-        this.name = name;
-        this.cost = cost;
-    }
-
-    public double getCost() { return cost; }
-
-    @Override
-    public String toString() {
-        return name + " (₹" + cost + ")";
-    }
-}
-
-/**
- * Use Case 7: Add-On Service Manager
- */
-class AddOnServiceManager {
-    private Map<String, List<AddOnService>> serviceMap = new HashMap<>();
-
-    public void addService(String key, AddOnService service) {
-        serviceMap.computeIfAbsent(key, k -> new ArrayList<>()).add(service);
-    }
-
-    public List<AddOnService> getServices(String key) {
-        return serviceMap.getOrDefault(key, new ArrayList<>());
-    }
-
-    public double calculateTotalCost(String key) {
-        double total = 0;
-        for (AddOnService s : getServices(key)) {
-            total += s.getCost();
-        }
-        return total;
-    }
-}
-
-/**
- * Use Case 6: Room Allocation Service
+ * Use Case 6: Allocation Service
  */
 class RoomAllocationService {
+
     private RoomInventory inventory;
-    private HashMap<String, Set<String>> allocatedRooms;
-    private int idCounter = 101;
 
     public RoomAllocationService(RoomInventory inventory) {
         this.inventory = inventory;
-        this.allocatedRooms = new HashMap<>();
-        allocatedRooms.put("Single Room", new HashSet<>());
-        allocatedRooms.put("Double Room", new HashSet<>());
-        allocatedRooms.put("Suite Room", new HashSet<>());
     }
 
     public void processAllocation(Reservation request) {
-        String type = request.getRoomType();
-        int stock = inventory.getAvailability(type);
 
-        if (stock > 0) {
-            String roomId = type.substring(0, 1).toUpperCase() + "-" + (idCounter++);
+        int stock = inventory.getAvailability(request.getRoomType());
 
-            allocatedRooms.get(type).add(roomId);
-            inventory.updateAvailability(type, stock - 1);
+        inventory.updateAvailability(request.getRoomType(), stock - 1);
 
-            System.out.println("CONFIRMED: " + request.getGuestName() +
-                    " assigned to " + roomId + " [" + type + "]");
-        } else {
-            System.out.println("FAILED: No availability for " +
-                    request.getGuestName() + " (" + type + ")");
-        }
+        System.out.println("CONFIRMED: " + request.getGuestName() +
+                " (" + request.getRoomType() + ")");
     }
 }
 
 /**
- * Use Case 5: Booking Request & Queue
+ * Use Case 5: Booking Queue
  */
-class Reservation {
-    private String guestName;
-    private String roomType;
-
-    public Reservation(String guestName, String roomType) {
-        this.guestName = guestName;
-        this.roomType = roomType;
-    }
-
-    public String getGuestName() { return guestName; }
-    public String getRoomType() { return roomType; }
-}
-
 class BookingRequestQueue {
+
     private Queue<Reservation> queue = new LinkedList<>();
 
     public void enqueueRequest(Reservation res) {
         queue.add(res);
-        System.out.println("Enqueued: " + res.getGuestName() + " (" + res.getRoomType() + ")");
+        System.out.println("Enqueued: " + res.getGuestName() +
+                " (" + res.getRoomType() + ")");
     }
 
-    public Reservation dequeueRequest() { return queue.poll(); }
-    public boolean hasPendingRequests() { return !queue.isEmpty(); }
+    public Reservation dequeueRequest() {
+        return queue.poll();
+    }
+
+    public boolean hasPendingRequests() {
+        return !queue.isEmpty();
+    }
+}
+
+/**
+ * Reservation Model
+ */
+class Reservation {
+
+    private String reservationId;
+    private String guestName;
+    private String roomType;
+
+    public Reservation(String reservationId, String guestName, String roomType) {
+        this.reservationId = reservationId;
+        this.guestName = guestName;
+        this.roomType = roomType;
+    }
+
+    public String getReservationId() { return reservationId; }
+    public String getGuestName() { return guestName; }
+    public String getRoomType() { return roomType; }
+}
+
+/**
+ * Use Case 3: Inventory
+ */
+class RoomInventory {
+
+    private Map<String, Integer> inventory = new HashMap<>();
+
+    public void setAvailability(String roomType, int count) {
+        inventory.put(roomType, count);
+    }
+
+    public int getAvailability(String roomType) {
+        return inventory.getOrDefault(roomType, 0);
+    }
+
+    public void updateAvailability(String roomType, int count) {
+        if (count < 0) {
+            throw new IllegalArgumentException("Inventory cannot be negative");
+        }
+        inventory.put(roomType, count);
+    }
+
+    public boolean containsRoomType(String roomType) {
+        return inventory.containsKey(roomType);
+    }
 }
 
 /**
  * Use Case 4: Search Service
  */
 class RoomSearchService {
+
     private RoomInventory inventory;
 
     public RoomSearchService(RoomInventory inventory) {
@@ -308,10 +231,14 @@ class RoomSearchService {
     }
 
     public void performSearch(List<Room> rooms) {
+
         for (Room room : rooms) {
+
             int count = inventory.getAvailability(room.getRoomType());
+
             if (count > 0) {
-                System.out.println(room.getRoomType() + ": " + count + " available at $" + room.getPrice());
+                System.out.println(room.getRoomType() + ": " +
+                        count + " available at $" + room.getPrice());
             }
         }
         System.out.println();
@@ -319,20 +246,10 @@ class RoomSearchService {
 }
 
 /**
- * Use Case 3: Centralized Room Inventory
- */
-class RoomInventory {
-    private HashMap<String, Integer> inventory = new HashMap<>();
-
-    public void setAvailability(String roomType, int count) { inventory.put(roomType, count); }
-    public int getAvailability(String roomType) { return inventory.getOrDefault(roomType, 0); }
-    public void updateAvailability(String roomType, int count) { inventory.put(roomType, count); }
-}
-
-/**
- * Use Case 2: Abstract Room Model
+ * Use Case 2: Room Model
  */
 abstract class Room {
+
     private int beds;
     private double price;
 
@@ -343,20 +260,21 @@ abstract class Room {
 
     public int getBeds() { return beds; }
     public double getPrice() { return price; }
+
     public abstract String getRoomType();
 }
 
 class SingleRoom extends Room {
-    public SingleRoom() { super(1, 80.0); }
-    @Override public String getRoomType() { return "Single Room"; }
+    public SingleRoom() { super(1, 80); }
+    public String getRoomType() { return "Single Room"; }
 }
 
 class DoubleRoom extends Room {
-    public DoubleRoom() { super(2, 120.0); }
-    @Override public String getRoomType() { return "Double Room"; }
+    public DoubleRoom() { super(2, 120); }
+    public String getRoomType() { return "Double Room"; }
 }
 
 class SuiteRoom extends Room {
-    public SuiteRoom() { super(3, 250.0); }
-    @Override public String getRoomType() { return "Suite Room"; }
+    public SuiteRoom() { super(3, 250); }
+    public String getRoomType() { return "Suite Room"; }
 }
