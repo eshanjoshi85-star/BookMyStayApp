@@ -13,13 +13,14 @@ import java.util.*;
  * Use Case 8: Booking History & Reporting
  * Use Case 9: Error Handling & Validation
  * Use Case 10: Booking Cancellation & Inventory Rollback
+ * Use Case 11: Concurrent Booking Simulation (Thread Safety)
  *
  * @author Eshan Pankaj Joshi
- * @version 10.0
+ * @version 11.0
  */
 public class BookMyStayApp {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
 
         // =============================
         // Use Case 1: Application Entry
@@ -104,12 +105,111 @@ public class BookMyStayApp {
         System.out.println("Single Room: " + inventory.getAvailability("Single Room"));
         System.out.println("Double Room: " + inventory.getAvailability("Double Room"));
         System.out.println("Suite Room: " + inventory.getAvailability("Suite Room"));
+
+        // ===================================
+        // Use Case 11: Concurrent Booking Simulation (Thread Safety)
+        // ===================================
+        BookingRequestQueue concurrentQueue = new BookingRequestQueue();
+
+        System.out.println("\n--- Concurrent Booking Simulation ---");
+
+        concurrentQueue.enqueueRequest(new Reservation("Dave", "Single Room"));
+        concurrentQueue.enqueueRequest(new Reservation("Eva", "Single Room"));
+        concurrentQueue.enqueueRequest(new Reservation("Frank", "Single Room"));
+
+        ConcurrentBookingProcessor processor =
+                new ConcurrentBookingProcessor(concurrentQueue, inventory);
+
+        Thread t1 = new Thread(processor);
+        Thread t2 = new Thread(processor);
+        Thread t3 = new Thread(processor);
+
+        t1.start();
+        t2.start();
+        t3.start();
+
+        t1.join();
+        t2.join();
+        t3.join();
+
+        System.out.println("\n--- Final Inventory After Concurrency ---");
+        System.out.println("Single Room: " + inventory.getAvailability("Single Room"));
     }
 }
 
-/**
- * Use Case 10: Cancellation Service
- */
+/* =============================
+   Use Case 11: Concurrent Processor
+   ============================= */
+class ConcurrentBookingProcessor implements Runnable {
+
+    private BookingRequestQueue queue;
+    private RoomInventory inventory;
+
+    public ConcurrentBookingProcessor(BookingRequestQueue queue,
+                                      RoomInventory inventory) {
+        this.queue = queue;
+        this.inventory = inventory;
+    }
+
+    public void run() {
+
+        while (true) {
+
+            Reservation res = queue.dequeueRequest();
+
+            if (res == null) {
+                break;
+            }
+
+            process(res);
+        }
+    }
+
+    private void process(Reservation res) {
+
+        synchronized (inventory) {
+
+            int stock = inventory.getAvailability(res.getRoomType());
+
+            if (stock > 0) {
+
+                inventory.updateAvailability(res.getRoomType(), stock - 1);
+
+                System.out.println(Thread.currentThread().getName() +
+                        " CONFIRMED: " + res.getGuestName());
+            } else {
+
+                System.out.println(Thread.currentThread().getName() +
+                        " FAILED: " + res.getGuestName());
+            }
+        }
+    }
+}
+
+/* =============================
+   Booking Request Queue (FINAL – Thread Safe)
+   ============================= */
+class BookingRequestQueue {
+
+    private Queue<Reservation> queue = new LinkedList<>();
+
+    public synchronized void enqueueRequest(Reservation res) {
+        queue.add(res);
+        System.out.println("Enqueued: " + res.getGuestName());
+    }
+
+    public synchronized Reservation dequeueRequest() {
+        return queue.poll();
+    }
+
+    public synchronized boolean hasPendingRequests() {
+        return !queue.isEmpty();
+    }
+}
+
+/* =============================
+   Use Case 10: Cancellation Service
+   ============================= */
 class CancellationService {
 
     private RoomInventory inventory;
@@ -130,31 +230,26 @@ class CancellationService {
 
         Reservation res = confirmedBookings.get(reservationId);
 
-        // Restore inventory
         int current = inventory.getAvailability(res.getRoomType());
         inventory.updateAvailability(res.getRoomType(), current + 1);
 
-        // LIFO rollback tracking
         rollbackStack.push(res.getRoomType());
 
-        // Remove from confirmed bookings
         confirmedBookings.remove(reservationId);
 
-        // Add cancellation record
         history.addReservation(
                 new Reservation(reservationId + "-CANCELLED",
                         res.getGuestName(),
                         res.getRoomType())
         );
 
-        System.out.println("CANCELLED: " + res.getGuestName() +
-                " | Room Released: " + res.getRoomType());
+        System.out.println("CANCELLED: " + res.getGuestName());
     }
 }
 
-/**
- * Use Case 8: Booking History
- */
+/* =============================
+   Use Case 8: Booking History
+   ============================= */
 class BookingHistory {
 
     private List<Reservation> reservations = new ArrayList<>();
@@ -168,9 +263,9 @@ class BookingHistory {
     }
 }
 
-/**
- * Use Case 6: Allocation Service
- */
+/* =============================
+   Use Case 6: Allocation Service
+   ============================= */
 class RoomAllocationService {
 
     private RoomInventory inventory;
@@ -186,8 +281,7 @@ class RoomAllocationService {
         if (stock > 0) {
             inventory.updateAvailability(request.getRoomType(), stock - 1);
 
-            System.out.println("CONFIRMED: " + request.getGuestName() +
-                    " (" + request.getRoomType() + ")");
+            System.out.println("CONFIRMED: " + request.getGuestName());
             return true;
         }
 
@@ -196,30 +290,9 @@ class RoomAllocationService {
     }
 }
 
-/**
- * Use Case 5: Booking Queue
- */
-class BookingRequestQueue {
-
-    private Queue<Reservation> queue = new LinkedList<>();
-
-    public void enqueueRequest(Reservation res) {
-        queue.add(res);
-        System.out.println("Enqueued: " + res.getGuestName());
-    }
-
-    public Reservation dequeueRequest() {
-        return queue.poll();
-    }
-
-    public boolean hasPendingRequests() {
-        return !queue.isEmpty();
-    }
-}
-
-/**
- * Reservation Model
- */
+/* =============================
+   Reservation
+   ============================= */
 class Reservation {
 
     private String reservationId;
@@ -242,9 +315,9 @@ class Reservation {
     }
 }
 
-/**
- * Use Case 3: Inventory
- */
+/* =============================
+   Use Case 3: Inventory
+   ============================= */
 class RoomInventory {
 
     private Map<String, Integer> inventory = new HashMap<>();
@@ -262,36 +335,25 @@ class RoomInventory {
     }
 }
 
-/**
- * Use Case 2: Room Model
- */
+/* =============================
+   Use Case 2: Room Model
+   ============================= */
 abstract class Room {
-
-    private int beds;
-    private double price;
-
-    public Room(int beds, double price) {
-        this.beds = beds;
-        this.price = price;
-    }
-
-    public int getBeds() { return beds; }
-    public double getPrice() { return price; }
 
     public abstract String getRoomType();
 }
 
 class SingleRoom extends Room {
-    public SingleRoom() { super(1, 80); }
+    public SingleRoom() { super(); }
     public String getRoomType() { return "Single Room"; }
 }
 
 class DoubleRoom extends Room {
-    public DoubleRoom() { super(2, 120); }
+    public DoubleRoom() { super(); }
     public String getRoomType() { return "Double Room"; }
 }
 
 class SuiteRoom extends Room {
-    public SuiteRoom() { super(3, 250); }
+    public SuiteRoom() { super(); }
     public String getRoomType() { return "Suite Room"; }
 }
