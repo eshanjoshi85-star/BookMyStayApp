@@ -1,7 +1,7 @@
 import java.util.*;
 
 /**
- * UseCase7AddOnServiceSelection
+ * UseCase8BookingHistoryReport
  *
  * Use Case 1: Application Entry
  * Use Case 2: Room Domain Modeling
@@ -10,9 +10,10 @@ import java.util.*;
  * Use Case 5: Booking Request (FIFO Intake)
  * Use Case 6: Reservation Confirmation & Room Allocation
  * Use Case 7: Add-On Service Selection
+ * Use Case 8: Booking History & Reporting
  *
  * @author Eshan Pankaj Joshi
- * @version 7.0
+ * @version 8.0
  */
 public class BookMyStayApp {
 
@@ -65,21 +66,19 @@ public class BookMyStayApp {
         // ===================================
         RoomAllocationService allocationService = new RoomAllocationService(inventory);
 
-        // Store confirmed reservations (for Use Case 7)
+        // Store confirmed reservations (for Use Case 7 & 8)
         List<Reservation> confirmedReservations = new ArrayList<>();
 
         System.out.println("--- Processing Allocations (FIFO) ---");
         while (bookingQueue.hasPendingRequests()) {
             Reservation request = bookingQueue.dequeueRequest();
 
-            // Capture output indirectly (no change to method)
             int before = inventory.getAvailability(request.getRoomType());
 
             allocationService.processAllocation(request);
 
             int after = inventory.getAvailability(request.getRoomType());
 
-            // If stock reduced → booking confirmed
             if (after < before) {
                 confirmedReservations.add(request);
             }
@@ -96,7 +95,6 @@ public class BookMyStayApp {
         AddOnService spa = new AddOnService("Spa Access", 2000);
         AddOnService pickup = new AddOnService("Airport Pickup", 1200);
 
-        // Guest selects services
         for (Reservation res : confirmedReservations) {
 
             serviceManager.addService(res.getGuestName(), breakfast);
@@ -108,7 +106,6 @@ public class BookMyStayApp {
             }
         }
 
-        // Display Add-On Summary
         System.out.println("\n--- Add-On Summary ---");
         for (Reservation res : confirmedReservations) {
 
@@ -125,8 +122,72 @@ public class BookMyStayApp {
             System.out.println("Total Add-On Cost: ₹" + total + "\n");
         }
 
-        System.out.println("Final System State Check:");
+        // ===================================
+        // Use Case 8: Booking History & Reporting
+        // ===================================
+        BookingHistory bookingHistory = new BookingHistory();
+        BookingReportService reportService = new BookingReportService();
+
+        for (Reservation res : confirmedReservations) {
+            bookingHistory.addReservation(res);
+        }
+
+        System.out.println("\n--- Booking History ---");
+        reportService.displayAllBookings(bookingHistory.getReservations());
+
+        reportService.generateSummary(bookingHistory.getReservations());
+
+        System.out.println("\nFinal System State Check:");
         System.out.println("Suite Availability: " + inventory.getAvailability("Suite Room"));
+    }
+}
+
+/**
+ * Use Case 8: Booking History Storage
+ */
+class BookingHistory {
+    private List<Reservation> reservations = new ArrayList<>();
+
+    public void addReservation(Reservation reservation) {
+        reservations.add(reservation);
+    }
+
+    public List<Reservation> getReservations() {
+        return Collections.unmodifiableList(reservations);
+    }
+}
+
+/**
+ * Use Case 8: Reporting Service
+ */
+class BookingReportService {
+
+    public void displayAllBookings(List<Reservation> reservations) {
+        for (Reservation r : reservations) {
+            System.out.println("Guest: " + r.getGuestName() +
+                    ", Room: " + r.getRoomType());
+        }
+    }
+
+    public void generateSummary(List<Reservation> reservations) {
+
+        int totalBookings = reservations.size();
+
+        Map<String, Integer> roomTypeCount = new HashMap<>();
+
+        for (Reservation r : reservations) {
+            roomTypeCount.put(
+                    r.getRoomType(),
+                    roomTypeCount.getOrDefault(r.getRoomType(), 0) + 1
+            );
+        }
+
+        System.out.println("\n--- Booking Summary Report ---");
+        System.out.println("Total Bookings: " + totalBookings);
+
+        for (String type : roomTypeCount.keySet()) {
+            System.out.println(type + ": " + roomTypeCount.get(type));
+        }
     }
 }
 
