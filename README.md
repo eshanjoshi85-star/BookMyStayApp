@@ -3,67 +3,64 @@
 This project presents the design and implementation of a Hotel Booking Management System to illustrate the practical application of Core Java and fundamental data structures in real-world scenarios. The system is developed incrementally, with each use case introducing a specific concept that addresses common software engineering challenges such as fair request handling, inventory consistency, and prevention of double-booking. By focusing on core logic and system behavior rather than user interface concerns, the project enables learners to understand not only how data structures are used, but why they are essential in scalable and maintainable software systems.
 
 
-Use Case 10: Booking Cancellation & Inventory Rollback
+Use Case 11: Concurrent Booking Simulation (Thread Safety)
 -
-**Goal:** 
+**Goal:**
 
-Enable safe cancellation of confirmed bookings by correctly reversing system state changes, ensuring inventory consistency and predictable recovery behavior.
+Demonstrate how concurrent access to shared resources can lead to inconsistent system state and show how synchronization ensures correctness under multi-user conditions.
 
 **Actor:**
 
-Guest – initiates a cancellation request for an existing booking.
+Multiple Guests – submit booking requests concurrently.
 
-Cancellation Service – validates cancellations and performs controlled rollback operations.
+Concurrent Booking Processor – processes booking requests in a multi-threaded environment.
 
 **Flow:**
 
-Guest initiates a cancellation request.
+Multiple guests submit booking requests simultaneously.
 
-The system validates the reservation to ensure it exists and is cancellable.
+Requests are added to a shared booking queue.
 
-The allocated room ID is recorded in a rollback structure.
+Threads retrieve requests using synchronized access.
 
-Inventory count for the corresponding room type is incremented.
+Room allocation and inventory updates are performed inside critical sections.
 
-Booking history is updated to reflect the cancellation.
-
-System state is restored consistently.
+The system completes allocations without conflicts or inconsistencies.
 
 **Key Concepts Used**
 
-State Reversal - Cancellation requires undoing previously completed operations. The system must revert inventory and booking state without introducing inconsistencies.
+Race Conditions - Race conditions occur when multiple threads access and modify shared data simultaneously. The final system state becomes dependent on execution timing rather than logic.
 
-Stack Data Structure - A Stack<String> is used to track recently released room IDs. Stacks follow a Last-In-First-Out (LIFO) order, which naturally models rollback behavior.
+Thread Safety - Thread safety ensures that shared resources behave correctly when accessed by multiple threads. This is critical in systems handling concurrent user actions.
 
-LIFO Rollback Logic - The most recent allocation is the first to be reversed. This aligns with real-world undo operations and simplifies recovery logic.
+Shared Mutable State - The booking queue and inventory are shared across threads. Uncontrolled access to shared mutable data can corrupt system state.
 
-Controlled Mutation - State changes during cancellation are performed in a strict, predefined order. This prevents partial rollbacks and protects system integrity.
+Critical Sections - Critical sections are blocks of code that must be executed by only one thread at a time. Synchronization ensures exclusive access to these sections.
 
-Inventory Restoration - Inventory counts are incremented immediately after cancellation. This ensures availability accurately reflects the current system state.
+Synchronized Access - Synchronization mechanisms are used to protect shared resources. This prevents interleaving operations that could lead to double allocation.
 
-Validation of Cancellation Requests - The system verifies that a reservation exists before allowing cancellation. Invalid or duplicate cancellation attempts are rejected safely.
+Concurrency vs. Parallelism - Concurrency focuses on correctness when tasks overlap in time. This use case emphasizes correctness over performance optimization.
 
 **Key Requirements**
 
-Allow cancellation of confirmed bookings only.
+Simulate multiple booking requests occurring at the same time.
 
-Validate reservation existence before performing rollback.
+Use shared data structures for booking requests and inventory.
 
-Release allocated room IDs back to the availability pool.
+Ensure inventory updates are performed in a thread-safe manner.
 
-Restore inventory counts accurately and immediately.
+Prevent double allocation under concurrent execution.
 
-Prevent cancellation of non-existent or already cancelled bookings.
+Maintain consistent system state under load.
 
 **Key Benefits**
 
-Safe recovery of inventory after cancellations
+Safe multi-user booking simulation
 
-Consistent system state across the booking lifecycle
+Correct room allocations under concurrent load
 
-Controlled and predictable rollback behavior
+Foundation for building scalable, multi-user systems
 
 **Drawbacks of Previous Use Case**
 
-Use Case 9 focused on input validation but did not address reversing valid operations.
-Without rollback support, confirmed bookings could not be safely undone.
+Earlier use cases assumed a single-threaded execution model. Such assumptions are unsafe in real production environments where concurrent access is common.
