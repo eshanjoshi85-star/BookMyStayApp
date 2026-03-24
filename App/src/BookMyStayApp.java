@@ -1,7 +1,7 @@
 import java.util.*;
 
 /**
- * UseCase6RoomAllocationService
+ * UseCase7AddOnServiceSelection
  *
  * Use Case 1: Application Entry
  * Use Case 2: Room Domain Modeling
@@ -9,9 +9,10 @@ import java.util.*;
  * Use Case 4: Room Search (Read-only access)
  * Use Case 5: Booking Request (FIFO Intake)
  * Use Case 6: Reservation Confirmation & Room Allocation
+ * Use Case 7: Add-On Service Selection
  *
  * @author Eshan Pankaj Joshi
- * @version 6.0
+ * @version 7.0
  */
 public class BookMyStayApp {
 
@@ -37,7 +38,7 @@ public class BookMyStayApp {
         RoomInventory inventory = new RoomInventory();
         inventory.setAvailability(singleRoom.getRoomType(), 10);
         inventory.setAvailability(doubleRoom.getRoomType(), 5);
-        inventory.setAvailability(suiteRoom.getRoomType(), 1); // Only 1 suite available
+        inventory.setAvailability(suiteRoom.getRoomType(), 1);
 
         // ===================================
         // Use Case 4: Room Search (Read-Only)
@@ -56,7 +57,7 @@ public class BookMyStayApp {
         System.out.println("--- Receiving Guest Requests ---");
         bookingQueue.enqueueRequest(new Reservation("Alice", "Suite Room"));
         bookingQueue.enqueueRequest(new Reservation("Bob", "Single Room"));
-        bookingQueue.enqueueRequest(new Reservation("Charlie", "Suite Room")); // Should fail (Stock is 1)
+        bookingQueue.enqueueRequest(new Reservation("Charlie", "Suite Room"));
         System.out.println();
 
         // ===================================
@@ -64,24 +65,119 @@ public class BookMyStayApp {
         // ===================================
         RoomAllocationService allocationService = new RoomAllocationService(inventory);
 
+        // Store confirmed reservations (for Use Case 7)
+        List<Reservation> confirmedReservations = new ArrayList<>();
+
         System.out.println("--- Processing Allocations (FIFO) ---");
         while (bookingQueue.hasPendingRequests()) {
             Reservation request = bookingQueue.dequeueRequest();
+
+            // Capture output indirectly (no change to method)
+            int before = inventory.getAvailability(request.getRoomType());
+
             allocationService.processAllocation(request);
+
+            int after = inventory.getAvailability(request.getRoomType());
+
+            // If stock reduced → booking confirmed
+            if (after < before) {
+                confirmedReservations.add(request);
+            }
         }
 
-        System.out.println("\nFinal System State Check:");
+        // ===================================
+        // Use Case 7: Add-On Service Selection
+        // ===================================
+        AddOnServiceManager serviceManager = new AddOnServiceManager();
+
+        System.out.println("\n--- Add-On Service Selection ---");
+
+        AddOnService breakfast = new AddOnService("Breakfast", 500);
+        AddOnService spa = new AddOnService("Spa Access", 2000);
+        AddOnService pickup = new AddOnService("Airport Pickup", 1200);
+
+        // Guest selects services
+        for (Reservation res : confirmedReservations) {
+
+            serviceManager.addService(res.getGuestName(), breakfast);
+
+            if (res.getRoomType().equals("Suite Room")) {
+                serviceManager.addService(res.getGuestName(), spa);
+            } else {
+                serviceManager.addService(res.getGuestName(), pickup);
+            }
+        }
+
+        // Display Add-On Summary
+        System.out.println("\n--- Add-On Summary ---");
+        for (Reservation res : confirmedReservations) {
+
+            System.out.println("Guest: " + res.getGuestName());
+
+            List<AddOnService> services =
+                    serviceManager.getServices(res.getGuestName());
+
+            for (AddOnService s : services) {
+                System.out.println("- " + s);
+            }
+
+            double total = serviceManager.calculateTotalCost(res.getGuestName());
+            System.out.println("Total Add-On Cost: ₹" + total + "\n");
+        }
+
+        System.out.println("Final System State Check:");
         System.out.println("Suite Availability: " + inventory.getAvailability("Suite Room"));
     }
 }
 
 /**
+ * Use Case 7: Add-On Service Model
+ */
+class AddOnService {
+    private String name;
+    private double cost;
+
+    public AddOnService(String name, double cost) {
+        this.name = name;
+        this.cost = cost;
+    }
+
+    public double getCost() { return cost; }
+
+    @Override
+    public String toString() {
+        return name + " (₹" + cost + ")";
+    }
+}
+
+/**
+ * Use Case 7: Add-On Service Manager
+ */
+class AddOnServiceManager {
+    private Map<String, List<AddOnService>> serviceMap = new HashMap<>();
+
+    public void addService(String key, AddOnService service) {
+        serviceMap.computeIfAbsent(key, k -> new ArrayList<>()).add(service);
+    }
+
+    public List<AddOnService> getServices(String key) {
+        return serviceMap.getOrDefault(key, new ArrayList<>());
+    }
+
+    public double calculateTotalCost(String key) {
+        double total = 0;
+        for (AddOnService s : getServices(key)) {
+            total += s.getCost();
+        }
+        return total;
+    }
+}
+
+/**
  * Use Case 6: Room Allocation Service
- * Ensures uniqueness and inventory synchronization.
  */
 class RoomAllocationService {
     private RoomInventory inventory;
-    // Maps Room Type to a Set of assigned Room IDs to prevent double-booking
     private HashMap<String, Set<String>> allocatedRooms;
     private int idCounter = 101;
 
@@ -98,19 +194,16 @@ class RoomAllocationService {
         int stock = inventory.getAvailability(type);
 
         if (stock > 0) {
-            // Generate Unique ID (e.g., S-101)
             String roomId = type.substring(0, 1).toUpperCase() + "-" + (idCounter++);
 
-            // Record the allocation to prevent double-booking
             allocatedRooms.get(type).add(roomId);
-
-            // Immediate Inventory Update
             inventory.updateAvailability(type, stock - 1);
 
             System.out.println("CONFIRMED: " + request.getGuestName() +
                     " assigned to " + roomId + " [" + type + "]");
         } else {
-            System.out.println("FAILED: No availability for " + request.getGuestName() + " (" + type + ")");
+            System.out.println("FAILED: No availability for " +
+                    request.getGuestName() + " (" + type + ")");
         }
     }
 }
