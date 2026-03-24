@@ -3,69 +3,72 @@
 This project presents the design and implementation of a Hotel Booking Management System to illustrate the practical application of Core Java and fundamental data structures in real-world scenarios. The system is developed incrementally, with each use case introducing a specific concept that addresses common software engineering challenges such as fair request handling, inventory consistency, and prevention of double-booking. By focusing on core logic and system behavior rather than user interface concerns, the project enables learners to understand not only how data structures are used, but why they are essential in scalable and maintainable software systems.
 
 
-Use Case 7: Add-On Service Selection
+Use Case 8: Booking History & Reporting
 -
-
 **Goal:** 
 
-Extend the booking model to support optional services, demonstrating how real-world business features can be added without modifying core booking or allocation logic.
+Introduce historical tracking of confirmed bookings to provide operational visibility, enable audits, and support reporting, reinforcing a persistence-oriented mindset without introducing external storage.
 
 **Actor:**
 
-Guest – selects optional services for an existing reservation.
+Admin – reviews booking history and reports for operational purposes.
 
-Add-On Service – represents an individual optional offering.
+Booking History – maintains a record of confirmed reservations.
 
-Add-On Service Manager – manages the association between reservations and selected services.
+Booking Report Service – generates summaries and reports from stored booking data.
 
 **Flow:**
 
-Guest selects one or more add-on services.
+A booking is successfully confirmed.
 
-Selected services are added to a list.
+The confirmed reservation is added to booking history.
 
-The list of services is mapped to the corresponding reservation ID.
+Booking history maintains records in insertion order.
 
-Additional cost for the reservation is calculated.
+Admin requests booking information or reports.
 
-Core booking and inventory state remain unchanged.
+Stored reservations are retrieved and displayed as required.
 
 **Key Concepts Used**
 
-Business Extensibility - Real-world bookings often include additional offerings beyond the primary product. The system must support new features without disrupting existing logic.
+Operational Visibility - Real systems require visibility into past transactions.
 
-One-to-Many Relationship - A single reservation can have multiple associated services. This relationship is modeled using a map from reservation ID to a list of services.
+Historical data allows administrators to understand system usage and behavior.
 
-Map and List Combination - Map<String, List<Service>> allows efficient lookup of services for a reservation. Lists preserve insertion order and allow multiple services to be attached.
+List Data Structure - A List<Reservation> is used to store confirmed bookings. Lists preserve insertion order, making them suitable for chronological records.
 
-Composition over Inheritance - Services are composed with reservations rather than inherited. This avoids rigid class hierarchies and supports flexible feature growth.
+Ordered Storage - Bookings are stored in the order they are confirmed. This naturally reflects real-world timelines and supports sequential reporting.
 
-Separation of Core and Optional Features - Add-on services are managed independently of room allocation and inventory. This prevents optional features from complicating critical booking workflows.
+Historical Tracking - Once stored, bookings form an audit trail. This enables later review, analysis, and verification of system actions.
 
-Cost Aggregation - Service costs are calculated separately and combined when needed. This keeps pricing logic modular and easier to extend.
+Reporting Readiness - Storing structured booking data prepares the system for reporting. Reports can be generated without reprocessing live booking flows.
+
+Separation of Data Storage and Reporting - Booking history focuses on storing data. Reporting logic is delegated to a separate service, reducing coupling.
+
+Persistence Mindset (Without Storage Medium) - Although data is stored in memory, the system treats history as long-lived information. This prepares learners conceptually for file-based or database persistence in later stages.
 
 **Key Requirements**
 
-Allow multiple services to be attached to a single reservation.
+Store each confirmed reservation in booking history.
 
-Store selected services using a reservation-to-services mapping.
+Maintain bookings in the order they are confirmed.
 
-Calculate total additional cost for selected services.
+Allow retrieval of stored reservations for review.
 
-Ensure add-on logic does not modify booking or inventory state.
+Generate summary reports from booking history.
 
-Support easy addition of new service types.
+Ensure reporting does not modify stored booking data.
 
 **Key Benefits**
 
-Flexible attachment of optional services to reservations
+Complete and traceable booking audit trail
 
-Clean mapping between bookings and value-added features
+Simplified reporting and administrative analysis
 
-Easy expansion of services without core booking changes
+Improved support for customer issue resolution
 
 **Drawbacks of Previous Use Case**
 
-Use Case 6 confirmed room allocation but treated bookings as static entities.
-
-Without add-on support, the system could not model common real-world booking enhancements.
+Use Case 7 extended booking functionality but did not retain historical data.
+Without booking history, completed transactions could not be reviewed or analyzed.
+Cost Aggregation - Service costs are calculated separately and combined when needed. This keeps pricing logic modular and easier to extend.
