@@ -3,64 +3,72 @@
 This project presents the design and implementation of a Hotel Booking Management System to illustrate the practical application of Core Java and fundamental data structures in real-world scenarios. The system is developed incrementally, with each use case introducing a specific concept that addresses common software engineering challenges such as fair request handling, inventory consistency, and prevention of double-booking. By focusing on core logic and system behavior rather than user interface concerns, the project enables learners to understand not only how data structures are used, but why they are essential in scalable and maintainable software systems.
 
 
-Use Case 11: Concurrent Booking Simulation (Thread Safety)
+Use Case 12: Data Persistence & System Recovery
 -
-**Goal:**
 
-Demonstrate how concurrent access to shared resources can lead to inconsistent system state and show how synchronization ensures correctness under multi-user conditions.
+**Goal:** 
+
+Introduce persistence and recovery concepts by ensuring that critical system state survives application restarts, transitioning learners from in-memory thinking to durable system design.
 
 **Actor:**
 
-Multiple Guests – submit booking requests concurrently.
+System – initiates save and restore operations during shutdown and startup.
 
-Concurrent Booking Processor – processes booking requests in a multi-threaded environment.
+Persistence Service – handles storing and retrieving system state from persistent storage.
 
 **Flow:**
 
-Multiple guests submit booking requests simultaneously.
+The system prepares for shutdown.
 
-Requests are added to a shared booking queue.
+Current booking and inventory state is serialized into a persistent format.
 
-Threads retrieve requests using synchronized access.
+Serialized data is written to a file.
 
-Room allocation and inventory updates are performed inside critical sections.
+System restarts.
 
-The system completes allocations without conflicts or inconsistencies.
+Persisted data is loaded from the file.
+
+Inventory and booking state are restored into memory.
+
+System resumes operation with recovered state.
 
 **Key Concepts Used**
 
-Race Conditions - Race conditions occur when multiple threads access and modify shared data simultaneously. The final system state becomes dependent on execution timing rather than logic.
+Stateful Applications - A stateful application maintains data beyond a single execution cycle. Business systems must preserve state to ensure continuity and correctness.
 
-Thread Safety - Thread safety ensures that shared resources behave correctly when accessed by multiple threads. This is critical in systems handling concurrent user actions.
+Persistence - Persistence refers to storing application state in a durable medium. This prevents data loss caused by restarts, crashes, or redeployments.
 
-Shared Mutable State - The booking queue and inventory are shared across threads. Uncontrolled access to shared mutable data can corrupt system state.
+Serialization - Serialization converts in-memory objects into a format suitable for storage. This allows complex data structures to be written to files and later reconstructed.
 
-Critical Sections - Critical sections are blocks of code that must be executed by only one thread at a time. Synchronization ensures exclusive access to these sections.
+Deserialization - Deserialization restores objects from persisted data back into memory. Correct deserialization is essential for accurate system recovery.
 
-Synchronized Access - Synchronization mechanisms are used to protect shared resources. This prevents interleaving operations that could lead to double allocation.
+Inventory Snapshot - The inventory state is captured at a point in time. Restoring this snapshot ensures availability reflects the last known valid state.
 
-Concurrency vs. Parallelism - Concurrency focuses on correctness when tasks overlap in time. This use case emphasizes correctness over performance optimization.
+Failure Tolerance - The system handles missing or corrupted persistence data safely. This prevents crashes and allows the application to start in a known, valid state.
+
+Preparation for Database Integration - File-based persistence introduces durability concepts without database complexity. This prepares learners conceptually for future database-backed systems.
 
 **Key Requirements**
 
-Simulate multiple booking requests occurring at the same time.
+Persist booking history and inventory state to a file.
 
-Use shared data structures for booking requests and inventory.
+Restore persisted data during application startup.
 
-Ensure inventory updates are performed in a thread-safe manner.
+Ensure the restored state accurately reflects the last saved state.
 
-Prevent double allocation under concurrent execution.
+Handle missing or corrupted persistence files gracefully.
 
-Maintain consistent system state under load.
+Allow the system to continue operating safely after recovery.
 
 **Key Benefits**
 
-Safe multi-user booking simulation
+No data loss across application restarts
 
-Correct room allocations under concurrent load
+More realistic and production-aligned system behavior
 
-Foundation for building scalable, multi-user systems
+Smooth conceptual transition toward database-backed systems
 
 **Drawbacks of Previous Use Case**
 
-Earlier use cases assumed a single-threaded execution model. Such assumptions are unsafe in real production environments where concurrent access is common.
+Earlier use cases relied entirely on in-memory data structures.
+As a result, all business state was lost when the application terminated.
